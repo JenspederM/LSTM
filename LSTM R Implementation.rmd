@@ -1,0 +1,106 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+rm(list = ls()) ; gc()
+```
+
+```{r}
+load_packages <- function(packages) {
+  new <- !packages %in% installed.packages()
+  if (any(new)) {
+    message("Installing missing packages: ", paste(packages[new], sep = " ,"), "\n")
+    install.packages(packages[new], Ncpus = parallel::detectCores())
+  }
+  invisible(sapply(packages, library, character.only = T))
+}
+```
+
+
+```{r}
+packages <- c("R6", "profvis", "Rcpp", "microbenchmark", "RcppArmadillo", "RcppEigen")
+load_packages(packages)
+
+source("helpers.R")
+source("LSTM Objects.R")
+
+
+
+# Guide : https://github.com/Manik9/LSTMs/blob/master/lstm.py
+```
+
+```{r}
+source("LSTM Functions.R")
+tt <- lstm_train(y_list = as.list(seq(0.0, 1, 0.25)),
+                 cells = 100, memory = 50, 
+                 learning_rate = 0.01, iterations = 1000, 
+                 print_divider = 10, stop_tresh = 0.00001, 
+                 verbose = T)
+
+
+
+```
+
+
+```{r}
+
+profvis(lstm_train(list(-0.2, 0.5, 0.2, -0.4), cells = 100, memory = 50, learning_rate = 0.01, iterations = 1000, print_divider = 10, stop_tresh = 0.00001, verbose = T))
+
+0.01 / 1000
+```
+
+
+```{r}
+library(microbenchmark)
+library(RcppArmadillo)
+library(RcppEigen)
+library(Rcpp)
+library(inline)
+
+
+sourceCpp("cppMatMult.cpp")
+
+
+eigenInlineMatMult <- cxxfunction(signature(tm="NumericMatrix",
+                                            tm2="NumericMatrix"),
+                                  plugin="RcppEigen",
+                                  body = c("
+NumericMatrix tm22(tm2);
+NumericMatrix tmm(tm);
+
+const Eigen::Map<Eigen::MatrixXd> ttm(as<Eigen::Map<Eigen::MatrixXd> >(tmm));
+const Eigen::Map<Eigen::MatrixXd> ttm2(as<Eigen::Map<Eigen::MatrixXd> >(tm22));
+
+Eigen::MatrixXd prod = ttm*ttm2;
+return(wrap(prod));
+"))
+
+n <- 1e2
+mat1 <- matrix(2.0, n, n)
+mat2 <- matrix(2.0, n)
+
+mat1 %*% mat2
+
+microbenchmark(
+  a <- mat1 %*% mat2,
+  b <- armaMatMult(mat1, mat2),
+  c <- eigenMatMult(mat1, mat2),
+  d <- eigenMapMatMult(mat1, mat2),
+  e <- eigenInlineMatMult(mat1, mat2),
+  times = 1000
+)
+
+wg <- matrix(runif(100*50), 100, 150)
+wgt <- t(wg)
+h_prev <- matrix(0, 100)
+x <- matrix(runif(50), 50)
+xc <- rbind(x, h_prev)
+xcv <- c(as.vector(x), as.vector(h_prev))
+wg %*% xc
+eigenInlineMatMult(wg, xc)
+
+identical(a, b, c, d, e)
+```
+

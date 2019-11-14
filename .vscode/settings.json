@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.rmd": "markdown",
+        "ostream": "cpp"
+    },
+    "python.linting.flake8Enabled": true,
+    "python.linting.enabled": true
+}
