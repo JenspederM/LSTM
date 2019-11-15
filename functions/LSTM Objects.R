@@ -178,10 +178,10 @@ LstmNode <- R6Class(
       # concatenate x(t) and h(t-1)
       xc <- c(x, h_prev)
       
-      self$state$g <- as.vector(tanh((self$param$wg %*% xc) + self$param$bg))
-      self$state$i <- as.vector(self$sigmoid((self$param$wi %*% xc) + self$param$bi))
-      self$state$f <- as.vector(self$sigmoid((self$param$wf %*% xc) + self$param$bf))
-      self$state$o <- as.vector(self$sigmoid((self$param$wo %*% xc) + self$param$bo))
+      self$state$g <- as.vector(tanh((self$param$wg %m% xc) + self$param$bg))
+      self$state$i <- as.vector(self$sigmoid((self$param$wi %m% xc) + self$param$bi))
+      self$state$f <- as.vector(self$sigmoid((self$param$wf %m% xc) + self$param$bf))
+      self$state$o <- as.vector(self$sigmoid((self$param$wo %m% xc) + self$param$bo))
       self$state$s <- as.vector(self$state$g * self$state$i) + (s_prev * self$state$f)
       self$state$h <- self$state$s * self$state$o
       
@@ -206,10 +206,10 @@ LstmNode <- R6Class(
       dg_input <- self$tanh_derivative(self$state$g) * dg
       
       # diffs w.r.t. inputs
-      self$param$wi_diff <- self$param$wi_diff + outer(di_input, self$xc)
-      self$param$wf_diff <- self$param$wf_diff + outer(df_input, self$xc)
-      self$param$wo_diff <- self$param$wo_diff + outer(do_input, self$xc)
-      self$param$wg_diff <- self$param$wg_diff + outer(dg_input, self$xc)
+      self$param$wi_diff <- self$param$wi_diff + di_input %op% self$xc
+      self$param$wf_diff <- self$param$wf_diff + df_input %op% self$xc
+      self$param$wo_diff <- self$param$wo_diff + do_input %op% self$xc
+      self$param$wg_diff <- self$param$wg_diff + dg_input %op% self$xc
       self$param$bi_diff <- self$param$bi_diff + di_input
       self$param$bf_diff <- self$param$bf_diff + df_input
       self$param$bo_diff <- self$param$bo_diff + do_input

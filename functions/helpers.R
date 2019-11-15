@@ -1,4 +1,33 @@
 
+# Extremely efficient Matrix Multiplication -------------------------------
+
+`%m%` <- cxxfunction(signature(mat="NumericMatrix",
+                               vec="NumericVector"),
+                     plugin="RcppEigen",
+                     body = c("
+                const Eigen::Map<Eigen::MatrixXd> x(as<Eigen::Map<Eigen::MatrixXd> >(mat));
+                const Eigen::Map<Eigen::MatrixXd> y(as<Eigen::Map<Eigen::MatrixXd> >(vec));
+                   
+                Eigen::MatrixXd prod = x*y;
+                return Rcpp::wrap(prod);
+                            "))
+
+
+# Extremely efficient Outer Product ---------------------------------------
+
+`%op%` <- cxxfunction(signature(v1="NumericVector",
+                                v2="NumericVector"),
+                      plugin = "RcppEigen",
+                      body = c("
+                  const Eigen::Map<Eigen::VectorXd> x(as<Eigen::Map<Eigen::VectorXd> >(v1));
+                  const Eigen::Map<Eigen::VectorXd> y(as<Eigen::Map<Eigen::VectorXd> >(v2));
+                  
+                  Eigen::MatrixXd op = x * y.transpose();
+                  return Rcpp::wrap(op);
+                           "))
+
+
+# Model Print Functions ---------------------------------------------------
 
 print_early <- function(iteration, loss, y, pred) {
   cat(sprintf(
@@ -62,6 +91,8 @@ print.LSTM <- function(x, ...) {
     sep = ""
   )
 }
+
+# Loss Layer --------------------------------------------------------------
 
 ToyLossLayer <- R6Class(
   "ToyLossLayer",
