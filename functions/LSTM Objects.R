@@ -178,11 +178,11 @@ LstmNode <- R6Class(
       # concatenate x(t) and h(t-1)
       xc <- c(x, h_prev)
       
-      self$state$g <- as.vector(tanh((self$param$wg %m% xc) + self$param$bg))
-      self$state$i <- as.vector(self$sigmoid((self$param$wi %m% xc) + self$param$bi))
-      self$state$f <- as.vector(self$sigmoid((self$param$wf %m% xc) + self$param$bf))
-      self$state$o <- as.vector(self$sigmoid((self$param$wo %m% xc) + self$param$bo))
-      self$state$s <- as.vector(self$state$g * self$state$i) + (s_prev * self$state$f)
+      self$state$g <- (tanh((self$param$wg %m% xc) + self$param$bg))
+      self$state$i <- (self$sigmoid((self$param$wi %m% xc) + self$param$bi))
+      self$state$f <- (self$sigmoid((self$param$wf %m% xc) + self$param$bf))
+      self$state$o <- (self$sigmoid((self$param$wo %m% xc) + self$param$bo))
+      self$state$s <- (self$state$g * self$state$i) + (s_prev * self$state$f)
       self$state$h <- self$state$s * self$state$o
       
       self$xc <- xc
@@ -206,10 +206,10 @@ LstmNode <- R6Class(
       dg_input <- self$tanh_derivative(self$state$g) * dg
       
       # diffs w.r.t. inputs
-      self$param$wi_diff <- self$param$wi_diff + di_input %op% self$xc
-      self$param$wf_diff <- self$param$wf_diff + df_input %op% self$xc
-      self$param$wo_diff <- self$param$wo_diff + do_input %op% self$xc
-      self$param$wg_diff <- self$param$wg_diff + dg_input %op% self$xc
+      self$param$wi_diff <- self$param$wi_diff + (di_input %op% self$xc)
+      self$param$wf_diff <- self$param$wf_diff + (df_input %op% self$xc)
+      self$param$wo_diff <- self$param$wo_diff + (do_input %op% self$xc)
+      self$param$wg_diff <- self$param$wg_diff + (dg_input %op% self$xc)
       self$param$bi_diff <- self$param$bi_diff + di_input
       self$param$bf_diff <- self$param$bf_diff + df_input
       self$param$bo_diff <- self$param$bo_diff + do_input
@@ -235,7 +235,51 @@ LstmNode <- R6Class(
 
 LstmNetwork <- R6Class(
   "LstmNetwork",
-  list(
+  private = list(
+    .input = NA,
+    .output = NA,
+    .loss = NA,
+    .inputIteration = NA,
+    .outputIteration = NA
+  ),
+  active = list(
+    input = function(value) {
+      if(missing(value)) {
+        private$.input
+      } else {
+        private$.input <- value
+      }
+    },
+    output = function(value) {
+      if(missing(value)) {
+        private$.output
+      } else {
+        private$.output <- value
+      }
+    },
+    loss = function(value) {
+      if(missing(value)) {
+        private$.loss
+      } else {
+        private$.loss <- value
+      }
+    },
+    inputIteration = function(value) {
+      if(missing(value)) {
+        private$.inputIteration
+      } else {
+        private$.inputIteration <- value
+      }
+    },
+    outputIteration = function(value) {
+      if(missing(value)) {
+        private$.outputIteration
+      } else {
+        private$.outputIteration <- value
+      }
+    }
+  ),
+  public = list(
     lstm_param = LstmParam$new(),
     lstm_node_list = list(),
     # input sequence
@@ -292,6 +336,28 @@ LstmNetwork <- R6Class(
       }
       
       return(loss)
+    },
+    
+    print = function(...) {
+      i <- private$.input
+      o <- private$.output
+      
+      if(length(i) > 10 || length(o) > 10) {
+        istring <- paste(c(head(sprintf("%6.3f", i), 5), "...", tail(sprintf("%6.3f", i), 5)), collapse = ", ")
+        ostring <- paste(c(head(sprintf("%6.3f", o), 5), "...", tail(sprintf("%6.3f", o), 5)), collapse = ", ")
+      } else {
+        istring <- paste(sprintf("%6.3f", i), collapse = ", ")
+        ostring <- paste(sprintf("%6.3f", o), collapse = ", ")
+      }
+      
+      cat(
+        "Object Type: LSTM Network\n\n",
+        sprintf("Finished on iteration %s of %s \n\n", private$.outputIteration, private$.inputIteration),
+        sprintf("%10s: [ %s ] \n", "Input", istring),
+        sprintf("%10s: [ %s ] \n\n", "Output", ostring),
+        sprintf("%10s = %.6f", "Final Loss", private$.loss[private$.outputIteration]),
+        sep = ""
+      )
     }
   )
 )

@@ -29,31 +29,23 @@ lstm_train <-
     
     # Train Network
     for (cur_iter in 1:iterations) {
-      if (verbose &&
-          cur_iter %% print_idx == 0)
-        cat(sprintf("Iteration %-10s: ", cur_iter))
       
       ## Make Predictions
       for (ind in seq_along(y_list)) {
         lstm_net$x_list_add(input_val_arr[[ind]])
       }
       
-      ## Print Prediction
-      if (verbose && cur_iter %% print_idx == 0) {
-        cat(sprintf("%s = [ %s ]",
-                    "y_pred", paste(
-                      sapply(1:length(y_list), function(ind)
-                        sprintf("%6.3f", lstm_net$lstm_node_list[[ind]]$state$h[1])),
-                      collapse = ", "
-                    )))
-      }
-      
       # Calculate Loss
       loss[cur_iter] <- lstm_net$y_list_is(y_list, ToyLossLayer)
       
-      # Print Loss
+      ## Print Prediction
       if (verbose && cur_iter %% print_idx == 0) {
-        cat(sprintf(" %s: %-.3f", "loss", loss[cur_iter]), "\n")
+        print_iteration(
+          prediction = lapply(1:length(y_list), function(ind) lstm_net$lstm_node_list[[ind]]$state$h[1]),
+          loss = loss,
+          currentIteration = cur_iter,
+          totalIteration = iterations
+        )
       }
       
       # Early Stopping
@@ -62,8 +54,12 @@ lstm_train <-
           abs(diff(loss))[cur_iter - 1] < stop_tresh) {
         stop_counter <- stop_counter + 1L
         if (stop_counter >= patience) {
-          print_early(cur_iter, loss, y_list, lstm_net$lstm_node_list)
-          break
+          lstm_net$input <- y_list
+          lstm_net$output <- lapply(1:length(y_list), function(ind) lstm_net$lstm_node_list[[ind]]$state$h[1])
+          lstm_net$loss <- loss[1:cur_iter]
+          lstm_net$inputIteration <- iterations
+          lstm_net$outputIteration <- cur_iter
+          return(lstm_net)
         }
       }
       
@@ -72,22 +68,13 @@ lstm_train <-
       
       # Clear Predictions
       lstm_net$x_list_clear()
-      
-      # Print Final Prediction
-      if (cur_iter == iterations) {
-        print_final(cur_iter, loss, y_list, lstm_net$lstm_node_list)
-      }
     }
     
+    lstm_net$input <- y_list
+    lstm_net$output <- lapply(1:length(y_list), function(ind) lstm_net$lstm_node_list[[ind]]$state$h[1])
+    lstm_net$loss <- loss[1:cur_iter]
+    lstm_net$inputIteration <- iterations
+    lstm_net$outputIteration <- cur_iter
     
-    structure(list(
-      "Input" = y_list,
-      "Output" = lapply(1:length(y_list), function(ind) lstm_net$lstm_node_list[[ind]]$state$h[1]),
-      "Loss" = loss,
-      "Network" = lstm_net,
-      "InputIterations" = iterations,
-      "FinishIterations" = cur_iter
-    ),
-    class = "LSTM"
-    )
+    lstm_net
   }

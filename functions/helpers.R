@@ -1,94 +1,18 @@
 
-# Extremely efficient Matrix Multiplication -------------------------------
+# Print Iteration ---------------------------------------------------------
 
-`%m%` <- cxxfunction(signature(mat="NumericMatrix",
-                               vec="NumericVector"),
-                     plugin="RcppEigen",
-                     body = c("
-                const Eigen::Map<Eigen::MatrixXd> x(as<Eigen::Map<Eigen::MatrixXd> >(mat));
-                const Eigen::Map<Eigen::MatrixXd> y(as<Eigen::Map<Eigen::MatrixXd> >(vec));
-                   
-                Eigen::MatrixXd prod = x*y;
-                return Rcpp::wrap(prod);
-                            "))
-
-
-# Extremely efficient Outer Product ---------------------------------------
-
-`%op%` <- cxxfunction(signature(v1="NumericVector",
-                                v2="NumericVector"),
-                      plugin = "RcppEigen",
-                      body = c("
-                  const Eigen::Map<Eigen::VectorXd> x(as<Eigen::Map<Eigen::VectorXd> >(v1));
-                  const Eigen::Map<Eigen::VectorXd> y(as<Eigen::Map<Eigen::VectorXd> >(v2));
-                  
-                  Eigen::MatrixXd op = x * y.transpose();
-                  return Rcpp::wrap(op);
-                           "))
-
-
-# Model Print Functions ---------------------------------------------------
-
-print_early <- function(iteration, loss, y, pred) {
-  cat(sprintf(
-    "\n##### Early stopping on iteration %s with loss = %.6f #####\n",
-    iteration,
-    loss[iteration]
-  ),
-  sprintf(
-    "\n%20s: [ %s ]\n",
-    "Original Input",
-    paste(sapply(y, function(idx)
-      sprintf("%6.3f", idx)), collapse = ", ")
-  ),
-  sprintf(
-    "\n%20s: [ %s ]",
-    "Final Prediction",
-    paste(sapply(1:length(y), function(idx)
-      sprintf("%6.3f", pred[[idx]]$state$h[1])), collapse = ", ")
-  ))
-}
-
-print_final <- function(iteration, loss, y, pred) {
-  cat(sprintf(
-    "\n##### Finished on iteration %s with loss = %.6f #####\n",
-    iteration,
-    loss[iteration]
-  ),
-  sprintf(
-    "\n%20s: [ %s ]\n",
-    "Original Input",
-    paste(sapply(y, function(idx)
-      sprintf("%6.3f", idx)), collapse = ", ")
-  ),
-  sprintf(
-    "\n%20s: [ %s ]",
-    "Final Prediction",
-    paste(sapply(1:length(y), function(idx)
-      sprintf("%6.3f", pred[[idx]]$state$h[1])), collapse = ", ")
-  ))
-}
-
-print.LSTM <- function(x, ...) {
-  i <- x$Input
-  o <- x$Output
+print_iteration <- function(prediction, loss, currentIteration, totalIteration) {
+  o <- prediction
   
-  
-  if(length(i) > 10 || length(o) > 10) {
-    istring <- paste(c(head(sprintf("%6.3f", i), 5), "...", tail(sprintf("%6.3f", i), 5)), collapse = ", ")
+  if(length(o) > 10) {
     ostring <- paste(c(head(sprintf("%6.3f", o), 5), "...", tail(sprintf("%6.3f", o), 5)), collapse = ", ")
   } else {
-    istring <- paste(sprintf("%6.3f", i), collapse = ", ")
     ostring <- paste(sprintf("%6.3f", o), collapse = ", ")
   }
   
   cat(
-    "Object Type: LSTM Network\n\n",
-    sprintf("Finished on iteration %s of %s \n\n", x$FinishIterations, x$InputIterations),
-    sprintf("%10s: [ %s ] \n", "Input", istring),
-    sprintf("%10s: [ %s ] \n\n", "Output", ostring),
-    sprintf("%10s = %.6f", "Final Loss", x$Loss[x$FinishIterations]),
-    sep = ""
+    sprintf("Iteration %-5s of %-5s: %s = [ %s ] %s: %-.3f \n", 
+            currentIteration, totalIteration, "Prediction", ostring, "Loss", loss[currentIteration])
   )
 }
 

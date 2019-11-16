@@ -8,6 +8,11 @@ rm(list = ls()) ; gc()
 ```
 
 ```{r}
+quiet <- function(x) { 
+  sink(tempfile()) 
+  on.exit(sink()) 
+  invisible(force(x)) 
+} 
 load_packages <- function(packages) {
   new <- !packages %in% installed.packages()
   if (any(new)) {
@@ -16,22 +21,33 @@ load_packages <- function(packages) {
   }
   invisible(sapply(packages, library, character.only = T))
 }
+source_functions <- function(functions) {
+  invisible(sapply(functions, function(x) {
+    if(endsWith(x, ".R")) {
+      quiet(source(x))
+    } else {
+      quiet(Rcpp::sourceCpp(x))
+    }
+  }))
+}
+
 ```
 
-
-```{r}
-packages <- c("R6", "RcppEigen", "inline")
+```{r, warning=FALSE}
+packages <- c("R6", "Rcpp", "RcppEigen")
 load_packages(packages) # Load Packages
-sourceCpp("test.cpp") # Source CPP Functions
-sapply(list.files("functions/"), source) # Source R Functions
+functions <- list.files("functions", full.names = T)
+source_functions(functions)
 # Guide : https://github.com/Manik9/LSTMs/blob/master/lstm.py
 ```
 
 ```{r}
-tt <- lstm_train(y_list = as.list(seq(0.0, 1, 0.05)),
-                 cells = 100, memory = 50, 
-                 learning_rate = 0.01, iterations = 1000, 
-                 print_divider = 10, stop_tresh = 0.00001, 
-                 verbose = T)
+network <- lstm_train(y_list = as.list(seq(0, 1, 0.05)),
+                      cells = 100, memory = 100, 
+                      learning_rate = 0.01, iterations = 100, 
+                      print_divider = 10, stop_tresh = 0.000001, 
+                      verbose = T, early_stopping = T)
 
+network
 ```
+
