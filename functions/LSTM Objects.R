@@ -178,10 +178,10 @@ LstmNode <- R6Class(
       # concatenate x(t) and h(t-1)
       xc <- c(x, h_prev)
       
-      self$state$g <- (tanh((self$param$wg %m% xc) + self$param$bg))
-      self$state$i <- (self$sigmoid((self$param$wi %m% xc) + self$param$bi))
-      self$state$f <- (self$sigmoid((self$param$wf %m% xc) + self$param$bf))
-      self$state$o <- (self$sigmoid((self$param$wo %m% xc) + self$param$bo))
+      self$state$g <- tanh((self$param$wg %m% xc) + self$param$bg)
+      self$state$i <- self$sigmoid((self$param$wi %m% xc) + self$param$bi)
+      self$state$f <- self$sigmoid((self$param$wf %m% xc) + self$param$bf)
+      self$state$o <- self$sigmoid((self$param$wo %m% xc) + self$param$bo)
       self$state$s <- (self$state$g * self$state$i) + (s_prev * self$state$f)
       self$state$h <- self$state$s * self$state$o
       

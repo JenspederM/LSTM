@@ -12,12 +12,12 @@ NumericMatrix outerProduct(NumericVector v1, NumericVector v2) {
   Eigen::MatrixXd op = x * y.transpose();
   return Rcpp::wrap(op);
 }
-  
+
 // [[Rcpp::export(name = `%m%`)]]
-NumericMatrix matrixMultiplication(NumericMatrix mat, NumericVector vec) {
+NumericVector matrixMultiplication(NumericMatrix mat, NumericVector vec) {
   Eigen::Map<Eigen::MatrixXd> x(as<Eigen::Map<Eigen::MatrixXd> >(mat));
   Eigen::Map<Eigen::MatrixXd> y(as<Eigen::Map<Eigen::MatrixXd> >(vec));
   
-  Eigen::MatrixXd m = x*y;
+  Eigen::VectorXd m = x*y;
   return Rcpp::wrap(m);
 }
