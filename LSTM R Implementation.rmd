@@ -51,28 +51,3 @@ network <- lstm_train(y_list = as.list(seq(0, 1, 0.25)),
 network
 ```
 
-```{r}
-library(profvis)
-library(bench)
-
-profvis(
-  lstm_train(y_list = as.list(seq(0, 1, 0.25)),
-                      cells = 100, memory = 100, 
-                      learning_rate = 0.01, iterations = 1000, 
-                      print_divider = 10, stop_tresh = 0.000001, 
-                      verbose = T, early_stopping = F)
-)
-
-wg <- network$lstm_node_list[[1]]$param$wg
-xc <- network$lstm_node_list[[1]]$xc
-di <- network$lstm_node_list[[1]]$state$i
-
-
-mark(
-  di%o%xc,
-  di%op%xc,
-  outerProduct(di, xc)
-)
-
-```
-
